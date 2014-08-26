@@ -6,8 +6,6 @@ import webbrowser
 from string import Template
 import argparse
 
-# number_of_posts = 100
-# group = "trap_edm"
 
 def all(group, number_of_posts):
 
@@ -65,7 +63,6 @@ def main():
 	parser.add_argument("-g", "--group", help="choose group to analyze", type=str, default='trap_edm', metavar='vk_domain')
 	parser.add_argument("-c", "--count", help="number of posts from the wall to analyze, integer in range 0..100", type=int, choices=range(101), default=10, metavar='[0..100]')
 	args = parser.parse_args()
-	# print(args.group, args.count)
 
 	all(args.group, args.count)
 
