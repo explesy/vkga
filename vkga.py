@@ -48,6 +48,15 @@ def html_gen(list_of_posts, number_of_posts):
 					result += str(list_of_posts[i]['attachments'][j]['audio']['artist']) + " - " + str(list_of_posts[i]['attachments'][j]['audio']['title'])
 					result += "</a>"
 					result += "</br>"
+				elif list_of_posts[i]['attachments'][j]['type'] == 'video':
+					result += "<b>Video: </b>"
+					result += "</br>"
+					result += str(list_of_posts[i]['attachments'][j]['video']['title'])
+					result += "</br>"
+					result += "<img src=\""
+					result += str(list_of_posts[i]['attachments'][j]["video"]['image_big'])
+					result += "\" />"
+					result += "</br>"
 		result += "</br></br>"
 		
 	with open('index.tpl', 'r') as tpl:
