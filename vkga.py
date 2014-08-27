@@ -69,7 +69,6 @@ def main():
 	parser.add_argument("-c", "--count", help="number of posts from the wall to analyze, integer in range 0..100", type=int, choices=range(101), default=10, metavar='[0..100]')
 	args = parser.parse_args()
 
-	list = []
 	list = get_post_list(args.group, args.count)
 	html_gen(list, args.count)
 
