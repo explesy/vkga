@@ -6,80 +6,93 @@ import webbrowser
 from string import Template
 import argparse
 
-def get_post_list(group, number_of_posts):
-	''' Return sorted by likes list of posts from the wall of community '''
+class PostList:
 
-	url = "https://api.vk.com/method/wall.get?domain={}&count={}".format(group, number_of_posts)
-	# We get massive of bytes, so we read it and decode to utf-8 
-	data = urllib.request.urlopen(url).read().decode('utf-8')
-	# Convert data from JSON to Python
-	data_encoded = json.loads(data)
+	def __init__(self, domain, number_of_posts):
+		'''
+		self.domain 			- domain of target
+		self.number_of_posts	- amount of posts to get from the wall
+		self.posts 				- list of posts
+		'''
+
+		self.domain = domain
+		self.number_of_posts = number_of_posts
+
+		url = "https://api.vk.com/method/wall.get?domain={}&count={}".format(domain, number_of_posts)
+		# We get massive of bytes, so we read it and decode to utf-8 
+		data = urllib.request.urlopen(url).read().decode('utf-8')
+		# Convert data from JSON to Python
+		data_encoded = json.loads(data)
+
+		list_of_posts = data_encoded['response'][1:]
+
+		self.posts = list_of_posts
+
+	def likes_sort(self):
+		''' Sort by likes list of posts from the wall '''
+
+		self.posts = sorted(self.posts, key=lambda k: k['likes']['count'], reverse = True) 
 
 
-	list_of_posts = data_encoded['response'][1:]
+	def html_gen(self):
+		''' Generate resulting html file with obtained data '''
 
-	list_of_posts = sorted(list_of_posts, key=lambda k: k['likes']['count'], reverse = True) 
+		result = ""
 
-	return list_of_posts
+		for i in range(0, self.number_of_posts):
+			result += "<h1>"
+			result += str(self.posts[i]['likes']['count'])
+			result += "</h1>=====</br>"
+			result += str(self.posts[i]['text'])
+			result += "</br>"
+			if 'attachments' in self.posts[i]:
+				for j in range(0, len(self.posts[i]['attachments'])):
+					if self.posts[i]['attachments'][j]['type'] == 'photo':
+						result += "<img src=\""
+						result += str(self.posts[i]['attachments'][j]["photo"]['src'])
+						result += "\" />"
+						result += "</br>"
+					elif self.posts[i]['attachments'][j]['type'] == 'audio':
+						result += "<a href=\""
+						result += str(self.posts[i]['attachments'][j]['audio']['url'])
+						result += "\">"
+						result += str(self.posts[i]['attachments'][j]['audio']['artist']) + " - " + str(self.posts[i]['attachments'][j]['audio']['title'])
+						result += "</a>"
+						result += "</br>"
+					elif self.posts[i]['attachments'][j]['type'] == 'video':
+						# result += "<b>Video: </b>"
+						# result += "</br>"
+						result += str(self.posts[i]['attachments'][j]['video']['title'])
+						result += "</br>"
+						result += "<img src=\""
+						result += str(self.posts[i]['attachments'][j]["video"]['image_big'])
+						result += "\" />"
+						result += "</br>"
+			result += "</br></br>"
+			
+		with open('index.tpl', 'r') as tpl:
+				template_raw = tpl.read()
 
+		page = Template(template_raw)
+		page = page.substitute(insert_data=result) #Exactly page = in other way we get Template object, not a string
 
-def html_gen(list_of_posts, number_of_posts):
-	''' Generate resulting html file with obtained data '''
+		#Important. Without parametr encoding='utf-8' don't working under Windows
+		with open('index.html', 'w', encoding='utf-8') as html:
+				html.write(page)
 
-	result = ""
-
-	for i in range(0, number_of_posts):
-		result += "<h1>"
-		result += str(list_of_posts[i]['likes']['count'])
-		result += "</h1>=====</br>"
-		result += str(list_of_posts[i]['text'])
-		result += "</br>"
-		if 'attachments' in list_of_posts[i]:
-			for j in range(0, len(list_of_posts[i]['attachments'])):
-				if list_of_posts[i]['attachments'][j]['type'] == 'photo':
-					result += "<img src=\""
-					result += str(list_of_posts[i]['attachments'][j]["photo"]['src'])
-					result += "\" />"
-					result += "</br>"
-				elif list_of_posts[i]['attachments'][j]['type'] == 'audio':
-					result += "<a href=\""
-					result += str(list_of_posts[i]['attachments'][j]['audio']['url'])
-					result += "\">"
-					result += str(list_of_posts[i]['attachments'][j]['audio']['artist']) + " - " + str(list_of_posts[i]['attachments'][j]['audio']['title'])
-					result += "</a>"
-					result += "</br>"
-				elif list_of_posts[i]['attachments'][j]['type'] == 'video':
-					result += "<b>Video: </b>"
-					result += "</br>"
-					result += str(list_of_posts[i]['attachments'][j]['video']['title'])
-					result += "</br>"
-					result += "<img src=\""
-					result += str(list_of_posts[i]['attachments'][j]["video"]['image_big'])
-					result += "\" />"
-					result += "</br>"
-		result += "</br></br>"
-		
-	with open('index.tpl', 'r') as tpl:
-			template_raw = tpl.read()
-
-	page = Template(template_raw)
-	page = page.substitute(insert_data=result) #Exactly page = in other way we get Template object, not a string
-
-	#Important. Without parametr encoding='utf-8' don't working under Windows
-	with open('index.html', 'w', encoding='utf-8') as html:
-			html.write(page)
-
-	webbrowser.open("index.html")
+		webbrowser.open("index.html")
 
 
 def main():
-	parser = argparse.ArgumentParser(description='Analyze group in vk and return list of most popular posts ordered by the number of likes')
-	parser.add_argument("-g", "--group", help="choose group to analyze", type=str, default='trap_edm', metavar='vk_domain')
+	parser = argparse.ArgumentParser(description='Analyze group or user in vk and return list of most popular posts ordered by the number of likes')
+	parser.add_argument("-d", "--domain", help="choose group or user to analyze", type=str, default='trap_edm', metavar='vk_domain')
 	parser.add_argument("-c", "--count", help="number of posts from the wall to analyze, integer in range 0..100", type=int, choices=range(101), default=10, metavar='[0..100]')
 	args = parser.parse_args()
 
-	list = get_post_list(args.group, args.count)
-	html_gen(list, args.count)
+	list = PostList(args.domain, args.count)
+	list.likes_sort()
+	list.html_gen()
 
 
-main()
+if __name__ == '__main__':
+  main()
